@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5월 매매일지</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Jua', sans-serif; }
+    body { background: #FEEAC9; min-height: 100vh; }
+    .app { background: #FEEAC9; min-height: 100vh; padding: 1.5rem; max-width: 600px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 1.5rem; }
+    .header h1 { font-size: 1.6rem; color: #1A120B; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.2rem; }
+    .card { border-radius: 14px; padding: 1rem 1.2rem; background: #ffffff; }
+    .card-label { font-size: 12px; color: #1A120B; margin-bottom: 6px; }
+    .card-goal .card-value { color: #FD7979; font-size: 1.2rem; }
+    .card-current .card-value { color: #FDACAC; font-size: 1.2rem; }
+    .card-remain .card-value { color: #FD7979; font-size: 1.2rem; }
+    .goal-set { background: #ffffff; border-radius: 14px; padding: 0.9rem 1.2rem; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .goal-set label { font-size: 13px; color: #1A120B; white-space: nowrap; }
+    .goal-set input[type=number] { flex: 1; min-width: 100px; border: 1.5px solid #FDACAC; border-radius: 8px; padding: 6px 10px; font-size: 14px; background: #ffffff; color: #353535; outline: none; font-family: 'Jua', sans-serif; }
+    .goal-set input[type=number]:focus { border-color: #FD7979; }
+    .goal-set span { font-size: 13px; color: #353535; }
+    .goal-set button { background: #FD7979; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: 'Jua', sans-serif; }
+    .goal-set button:hover { background: #e06060; }
+    .chart-section { background: #ffffff; border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; display: flex; flex-direction: column; align-items: center; }
+    .chart-label { font-size: 14px; color: #1A120B; margin-bottom: 8px; align-self: flex-start; }
+    .donut-wrap { position: relative; width: 160px; height: 160px; margin: 0 auto; }
+    .donut-wrap canvas { width: 160px !important; height: 160px !important; }
+    .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+    .donut-pct { font-size: 1.5rem; color: #FD7979; font-family: 'Jua', sans-serif; }
+    .donut-sub { font-size: 11px; color: #353535; margin-top: 2px; }
+    .input-section { background: #ffffff; border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+    .section-title { font-size: 14px; color: #1A120B; margin-bottom: 8px; }
+    .stock-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+    .toggle-btn { flex: 1; padding: 7px; border-radius: 8px; border: 2px solid #FDACAC; background: #ffffff; color: #353535; font-size: 13px; cursor: pointer; font-family: 'Jua', sans-serif; transition: all 0.15s; }
+    .toggle-btn.active-kr { background: #FFCDC9; border-color: #FD7979; color: #1A120B; }
+    .toggle-btn.active-us { background: #FDACAC; border-color: #FD7979; color: #1A120B; }
+    .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .ifield { border: 1.5px solid #FDACAC; border-radius: 8px; padding: 6px 9px; font-size: 13px; background: #ffffff; color: #353535; outline: none; width: 100%; font-family: 'Jua', sans-serif; -webkit-appearance: none; }
+    .ifield:focus { border-color: #FD7979; }
+    .ifield::placeholder { color: #bbb; }
+    .reason-row { margin-bottom: 8px; }
+    .achieve-auto { font-size: 10px; color: #aaa; margin-top: 2px; margin-bottom: 4px; }
+    .add-btn { width: 100%; background: #FD7979; color: #fff; border: none; border-radius: 8px; padding: 8px; font-size: 14px; cursor: pointer; font-family: 'Jua', sans-serif; margin-top: 4px; }
+    .add-btn:hover { background: #e06060; }
+    .records-wrap { display: flex; flex-direction: column; gap: 12px; }
+    .record-box { background: #ffffff; border-radius: 14px; padding: 1rem 1.2rem; }
+    .record-box-title { font-size: 14px; color: #1A120B; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+    th { background: #FFCDC9; color: #1A120B; padding: 6px 8px; text-align: center; font-family: 'Jua', sans-serif; }
+    td { padding: 6px 8px; text-align: center; color: #353535; border-bottom: 1px solid #FFE0DC; font-family: 'Jua', sans-serif; word-break: break-all; }
+    tr:last-child td { border-bottom: none; }
+    .del-btn { background: none; border: none; color: #FD7979; cursor: pointer; font-size: 13px; }
+    .empty-msg { text-align: center; color: #bbb; font-size: 12px; padding: 0.8rem 0; }
+    @media (max-width: 500px) {
+      .cards { grid-template-columns: 1fr; }
+      .input-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header"><h1>🖤 5월 매매일지 🖤</h1></div>
+
+  <div class="cards">
+    <div class="card card-goal"><div class="card-label">목표수익</div><div class="card-value" id="goalVal">0원</div></div>
+    <div class="card card-current"><div class="card-label">현재 실현손익</div><div class="card-value" id="currentVal">0원</div></div>
+    <div class="card card-remain"><div class="card-label">남은 금액</div><div class="card-value" id="remainVal">0원</div></div>
+  </div>
+
+  <div class="goal-set">
+    <label>목표 설정</label>
+    <input type="number" id="goalInput" placeholder="목표수익 입력" />
+    <span>원</span>
+    <button onclick="setGoal()">목표 업데이트</button>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-label">달성율</div>
+    <div class="donut-wrap">
+      <canvas id="donutChart"></canvas>
+      <div class="donut-center">
+        <div class="donut-pct" id="donutPct">0.00%</div>
+        <div class="donut-sub" id="donutSub">목표 미설정</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-section">
+    <div class="section-title">손익 입력</div>
+    <div class="stock-toggle">
+      <button class="toggle-btn active-kr" id="btnKR" onclick="selectMarket('KR')">🇰🇷 국내주식</button>
+      <button class="toggle-btn" id="btnUS" onclick="selectMarket('US')">🇺🇸 미국주식</button>
+    </div>
+    <div class="input-row">
+      <input type="date" id="inDate" class="ifield" />
+      <input type="text" id="inStock" class="ifield" placeholder="종목명" />
+      <input type="number" id="inPnl" class="ifield" placeholder="실현손익 (원)" step="0.01" oninput="previewAchieve()" />
+    </div>
+    <div class="reason-row">
+      <input type="text" id="inReason" class="ifield" placeholder="매매이유를 입력하세요" />
+    </div>
+    <div class="achieve-auto" id="achievePreview"></div>
+    <button class="add-btn" onclick="addRecord()">추가하기</button>
+  </div>
+
+  <div class="records-wrap">
+    <div class="record-box">
+      <div class="record-box-title">🇰🇷 국내주식 기록</div>
+      <div id="tableKR"><div class="empty-msg">아직 기록이 없어요!</div></div>
+    </div>
+    <div class="record-box">
+      <div class="record-box-title">🇺🇸 미국주식 기록</div>
+      <div id="tableUS"><div class="empty-msg">아직 기록이 없어요!</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let goal = 0, records = [], selectedMarket = 'KR', donutChart = null;
+
+  function fmt(n) { return isNaN(n) ? '-' : Number(n).toLocaleString('ko-KR') + '원'; }
+  function calcAchieve(pnl) { return (!goal || goal === 0) ? null : (pnl / goal) * 100; }
+
+  function previewAchieve() {
+    const pnl = parseFloat(document.getElementById('inPnl').value);
+    const el = document.getElementById('achievePreview');
+    if (!isNaN(pnl) && goal > 0) { el.textContent = '이 건의 달성율: ' + calcAchieve(pnl).toFixed(2) + '%'; }
+    else if (!isNaN(pnl)) { el.textContent = '목표수익을 먼저 설정하면 달성율이 자동 계산됩니다.'; }
+    else { el.textContent = ''; }
+  }
+
+  function setGoal() {
+    const v = parseFloat(document.getElementById('goalInput').value);
+    if (isNaN(v)) return;
+    goal = v;
+    records = records.map(r => ({ ...r, achieve: calcAchieve(r.pnl) }));
+    updateCards(); updateChart(); renderTables(); previewAchieve();
+  }
+
+  function selectMarket(m) {
+    selectedMarket = m;
+    document.getElementById('btnKR').className = 'toggle-btn' + (m === 'KR' ? ' active-kr' : '');
+    document.getElementById('btnUS').className = 'toggle-btn' + (m === 'US' ? ' active-us' : '');
+  }
+
+  function addRecord() {
+    const date = document.getElementById('inDate').value;
+    const stock = document.getElementById('inStock').value.trim();
+    const pnl = parseFloat(document.getElementById('inPnl').value);
+    const reason = document.getElementById('inReason').value.trim();
+    if (!date || !stock || isNaN(pnl)) { alert('날짜, 종목명, 실현손익은 필수입니다.'); return; }
+    records.push({ date, stock, pnl, achieve: calcAchieve(pnl), reason, market: selectedMarket });
+    document.getElementById('inDate').value = '';
+    document.getElementById('inStock').value = '';
+    document.getElementById('inPnl').value = '';
+    document.getElementById('inReason').value = '';
+    document.getElementById('achievePreview').textContent = '';
+    updateCards(); updateChart(); renderTables();
+  }
+
+  function deleteRecord(i) {
+    records.splice(i, 1);
+    updateCards(); updateChart(); renderTables();
+  }
+
+  function updateCards() {
+    const total = records.reduce((s, r) => s + r.pnl, 0);
+    document.getElementById('goalVal').textContent = fmt(goal);
+    document.getElementById('currentVal').textContent = fmt(total);
+    document.getElementById('remainVal').textContent = fmt(goal - total);
+  }
+
+  function updateChart() {
+    const total = records.reduce((s, r) => s + r.pnl, 0);
+    const pct = goal > 0 ? (total / goal) * 100 : 0;
+    document.getElementById('donutPct').textContent = goal > 0 ? pct.toFixed(2) + '%' : '0.00%';
+    document.getElementById('donutSub').textContent = goal > 0 ? '달성율' : '목표 미설정';
+    const filled = Math.max(0, Math.min(pct, 100));
+    if (donutChart) {
+      donutChart.data.datasets[0].data = [filled, 100 - filled];
+      donutChart.update();
+    } else {
+      const ctx = document.getElementById('donutChart').getContext('2d');
+      donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { datasets: [{ data: [0, 100], backgroundColor: ['#FD7979', '#FFE8E8'], borderWidth: 0 }] },
+        options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+      });
+    }
+  }
+
+  function renderTables() {
+    ['KR', 'US'].forEach(market => {
+      const filtered = records.map((r, i) => ({ ...r, idx: i })).filter(r => r.market === market);
+      const wrap = document.getElementById('table' + market);
+      if (filtered.length === 0) { wrap.innerHTML = '<div class="empty-msg">아직 기록이 없어요!</div>'; return; }
+      const rows = filtered.map(r => `<tr>
+        <td style="width:22%">${r.date}</td>
+        <td style="width:18%">${r.stock}</td>
+        <td style="width:22%;color:${r.pnl >= 0 ? '#e05050' : '#3070d0'};font-weight:700">${r.pnl >= 0 ? '+' : ''}${r.pnl.toLocaleString('ko-KR')}원</td>
+        <td style="width:16%">${r.achieve !== null ? r.achieve.toFixed(2) + '%' : '-'}</td>
+        <td style="width:18%;font-size:11px;color:#888">${r.reason || '-'}</td>
+        <td style="width:4%"><button class="del-btn" onclick="deleteRecord(${r.idx})">✕</button></td>
+      </tr>`).join('');
+      wrap.innerHTML = `<table>
+        <thead><tr><th>날짜</th><th>종목</th><th>손익</th><th>달성율</th><th>매매이유</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    });
+  }
+
+  updateCards(); updateChart(); renderTables();
+</script>
+</body>
+</html>
