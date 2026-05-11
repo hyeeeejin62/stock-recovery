@@ -50,10 +50,10 @@
     .record-box { background: #ffffff; border-radius: 14px; padding: 1rem 1.2rem; }
     .record-box-title { font-size: 14px; color: #1A120B; margin-bottom: 8px; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-    th { background: #FFCDC9; color: #1A120B; padding: 6px 8px; text-align: center; font-family: 'Jua', sans-serif; }
-    td { padding: 6px 8px; text-align: center; color: #353535; border-bottom: 1px solid #FFE0DC; font-family: 'Jua', sans-serif; word-break: break-all; }
+    th { background: #FFCDC9; color: #1A120B; padding: 6px 8px; text-align: center; font-family: 'Jua', sans-serif; font-weight: normal; }
+    td { padding: 6px 8px; text-align: center; color: #353535; border-bottom: 1px solid #FFE0DC; font-family: 'Jua', sans-serif; word-break: break-all; font-weight: normal; }
     tr:last-child td { border-bottom: none; }
-    .del-btn { background: none; border: none; color: #FD7979; cursor: pointer; font-size: 13px; }
+    .del-btn { background: none; border: none; color: #FD7979; cursor: pointer; font-size: 13px; font-weight: normal; }
     .empty-msg { text-align: center; color: #bbb; font-size: 12px; padding: 0.8rem 0; }
     .save-badge { font-size: 10px; color: #aaa; text-align: center; margin-top: 0.5rem; padding-bottom: 1rem; }
     @media (max-width: 500px) {
@@ -228,7 +228,7 @@
       const rows = filtered.map(r => `<tr>
         <td style="width:22%">${r.date}</td>
         <td style="width:18%">${r.stock}</td>
-        <td style="width:22%;color:${r.pnl >= 0 ? '#e05050' : '#3070d0'};font-weight:700">${r.pnl >= 0 ? '+' : ''}${r.pnl.toLocaleString('ko-KR')}원</td>
+        <td style="width:22%;color:${r.pnl >= 0 ? '#e05050' : '#3070d0'}">${r.pnl >= 0 ? '+' : ''}${r.pnl.toLocaleString('ko-KR')}원</td>
         <td style="width:16%">${r.achieve !== null ? r.achieve.toFixed(2) + '%' : '-'}</td>
         <td style="width:18%;font-size:11px;color:#888">${r.reason || '-'}</td>
         <td style="width:4%"><button class="del-btn" onclick="deleteRecord(${r.idx})">✕</button></td>
