@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5월 매매일지</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Jua', sans-serif; background: #FFEAEA; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* 페이지 전환 */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* 공통 */
+    h1 { font-size: 22px; margin-bottom: 0.3rem; }
+    .subtitle { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+    .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 13px; color: #888; margin-bottom: 10px; }
+
+    /* 홈 - 선택 카드 */
+    .home-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .home-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 16px; padding: 1.5rem; text-align: center; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+    .home-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .home-card .icon { font-size: 32px; margin-bottom: 8px; }
+    .home-card .card-title { font-size: 16px; margin-bottom: 4px; }
+    .home-card .card-sub { font-size: 12px; color: #888; }
+
+    /* 홈 - 요약 지표 */
+    .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    @media (max-width: 620px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } .home-cards { grid-template-columns: 1fr; } }
+    .metric { background: #fff3f3; border-radius: 8px; padding: 0.75rem; text-align: center; }
+    .metric-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 16px; font-weight: 500; }
+
+    /* 뒤로가기 */
+    .back-btn { background: none; border: none; font-family: 'Jua', sans-serif; font-size: 13px; color: #888; cursor: pointer; margin-bottom: 1rem; padding: 0; display: flex; align-items: center; gap: 4px; }
+    .back-btn:hover { color: #333; }
+
+    /* 입력 */
+    .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 8px; }
+    .input-group { display: flex; flex-direction: column; gap: 4px; }
+    .input-group label { font-size: 11px; color: #888; }
+    input[type=text], input[type=number], input[type=date], textarea {
+      width: 100%; height: 34px; border: 0.5px solid rgba(0,0,0,0.18); border-radius: 8px;
+      padding: 0 10px; font-size: 13px; font-family: 'Jua', sans-serif; background: #fff; color: #1a1a1a; outline: none;
+    }
+    textarea { height: 34px; padding: 8px 10px; resize: none; }
+    input:focus, textarea:focus { border-color: #FF7E7E; }
+    button.add-btn {
+      margin-top: 8px; height: 36px; width: 100%; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px;
+      background: #fff; color: #1a1a1a; font-size: 13px; font-family: 'Jua', sans-serif; cursor: pointer;
+    }
+    button.add-btn:hover { background: #FFEAEA; }
+
+    /* 테이블 */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; font-size: 12px; border-collapse: collapse; min-width: 600px; }
+    th { font-size: 11px; color: #888; text-align: left; padding: 4px 8px; border-bottom: 0.5px solid rgba(0,0,0,0.1); white-space: nowrap; }
+    td { padding: 7px 8px; border-bottom: 0.5px solid rgba(0,0,0,0.06); }
+    .pos { color: #1D9E75; } .neg { color: #E24B4A; }
+    .delete-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 13px; padding: 2px 4px; }
+    .delete-btn:hover { color: #E24B4A; }
+    .empty-msg { font-size: 13px; color: #aaa; text-align: center; padding: 20px 0; }
+    .tag { display: inline-block; font-size: 10px; background: #ffe0e0; color: #cc4444; border-radius: 4px; padding: 1px 5px; }
+    .tag-blue { background: #e0f0ff; color: #2277cc; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 홈 페이지 -->
+  <div id="page-home" class="page active">
+    <h1>📒 5월 매매일지</h1>
+    <p class="subtitle">국내 / 미국 주식 매매 기록</p>
+
+    <div class="home-cards">
+      <div class="home-card" onclick="goTo('page-kr')">
+        <div class="icon">🇰🇷</div>
+        <div class="card-title">국내주식</div>
+        <div class="card-sub">원화 (₩) 기준</div>
+      </div>
+      <div class="home-card" onclick="goTo('page-us')">
+        <div class="icon">🇺🇸</div>
+        <div class="card-title">미국주식</div>
+        <div class="card-sub">달러 ($) 기준</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">전체 요약</div>
+      <div class="summary-grid">
+        <div class="metric">
+          <div class="metric-label">국내 수익</div>
+          <div class="metric-value" id="s-kr">0원</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">미국 수익</div>
+          <div class="metric-value" id="s-us">$0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">목표 수익</div>
+          <div class="metric-value" id="s-goal" style="color:#FFBB00;">0원</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">현재 수익 (원화)</div>
+          <div class="metric-value" id="s-total" style="color:#48CAE1;">0원</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">달성율</div>
+          <div class="metric-value" id="s-rate" style="color:#FF7E7E;">0%</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+        <label style="font-size:12px;color:#888;white-space:nowrap;">목표 수익</label>
+        <input type="number" id="goal-input" placeholder="목표 수익 입력 (원)" style="max-width:180px;height:32px;" oninput="updateGoal()" />
+        <span style="font-size:12px;color:#888;">원</span>
+        <label style="font-size:12px;color:#888;white-space:nowrap;margin-left:8px;">환율</label>
+        <input type="number" id="rate-input" placeholder="예) 1380" style="max-width:100px;height:32px;" oninput="updateGoal()" />
+        <span style="font-size:12px;color:#888;">원/$</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 국내주식 페이지 -->
+  <div id="page-kr" class="page">
+    <button class="back-btn" onclick="goTo('page-home')">← 뒤로</button>
+    <h1>🇰🇷 국내주식 매매일지</h1>
+    <p class="subtitle">기준통화: 원화 (₩)</p>
+
+    <div class="card">
+      <div class="section-title">매매 입력</div>
+      <div class="input-grid">
+        <div class="input-group"><label>날짜</label><input type="date" id="kr-date" /></div>
+        <div class="input-group"><label>종목명</label><input type="text" id="kr-stock" placeholder="예) 삼성전자" /></div>
+        <div class="input-group"><label>매수가 (원)</label><input type="number" id="kr-buy" placeholder="0" /></div>
+        <div class="input-group"><label>매도가 (원)</label><input type="number" id="kr-sell" placeholder="0" /></div>
+        <div class="input-group"><label>매도수량</label><input type="number" id="kr-qty" placeholder="0" /></div>
+        <div class="input-group"><label>메모</label><input type="text" id="kr-memo" placeholder="선택사항" /></div>
+      </div>
+      <button class="add-btn" onclick="addKr()">추가하기</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">기록</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>날짜</th><th>종목</th><th>매수가</th><th>매도가</th><th>수량</th><th>수익금</th><th>수익율</th><th>메모</th><th></th></tr></thead>
+          <tbody id="kr-body"></tbody>
+        </table>
+        <div id="kr-empty" class="empty-msg">아직 기록이 없어요!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 미국주식 페이지 -->
+  <div id="page-us" class="page">
+    <button class="back-btn" onclick="goTo('page-home')">← 뒤로</button>
+    <h1>🇺🇸 미국주식 매매일지</h1>
+    <p class="subtitle">기준통화: 달러 ($)</p>
+
+    <div class="card">
+      <div class="section-title">매매 입력</div>
+      <div class="input-grid">
+        <div class="input-group"><label>날짜</label><input type="date" id="us-date" /></div>
+        <div class="input-group"><label>종목명</label><input type="text" id="us-stock" placeholder="예) AAPL" /></div>
+        <div class="input-group"><label>매수가 ($)</label><input type="number" id="us-buy" placeholder="0" /></div>
+        <div class="input-group"><label>매도가 ($)</label><input type="number" id="us-sell" placeholder="0" /></div>
+        <div class="input-group"><label>매도수량</label><input type="number" id="us-qty" placeholder="0" /></div>
+        <div class="input-group"><label>매수 환율 (원/$)</label><input type="number" id="us-buy-rate" placeholder="예) 1380" /></div>
+        <div class="input-group"><label>매도 환율 (원/$)</label><input type="number" id="us-sell-rate" placeholder="예) 1400" /></div>
+        <div class="input-group"><label>메모</label><input type="text" id="us-memo" placeholder="선택사항" /></div>
+      </div>
+      <button class="add-btn" onclick="addUs()">추가하기</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">기록</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>날짜</th><th>종목</th><th>매수가</th><th>매도가</th><th>수량</th><th>수익금($)</th><th>수익율</th><th>환차익/손</th><th>메모</th><th></th></tr></thead>
+          <tbody id="us-body"></tbody>
+        </table>
+        <div id="us-empty" class="empty-msg">아직 기록이 없어요!</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let krEntries = JSON.parse(localStorage.getItem('kr-entries') || '[]');
+  let usEntries = JSON.parse(localStorage.getItem('us-entries') || '[]');
+  let goalAmt = parseInt(localStorage.getItem('goal-amt') || '0');
+  let fxRate = parseInt(localStorage.getItem('fx-rate') || '1380');
+
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  document.getElementById('kr-date').value = todayStr();
+  document.getElementById('us-date').value = todayStr();
+  if (goalAmt) document.getElementById('goal-input').value = goalAmt;
+  document.getElementById('rate-input').value = fxRate;
+
+  function goTo(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function save() {
+    localStorage.setItem('kr-entries', JSON.stringify(krEntries));
+    localStorage.setItem('us-entries', JSON.stringify(usEntries));
+    localStorage.setItem('goal-amt', goalAmt);
+    localStorage.setItem('fx-rate', fxRate);
+  }
+
+  function updateGoal() {
+    goalAmt = parseInt(document.getElementById('goal-input').value) || 0;
+    fxRate = parseInt(document.getElementById('rate-input').value) || 1380;
+    save();
+    refreshHome();
+  }
+
+  function addKr() {
+    const date = document.getElementById('kr-date').value;
+    const stock = document.getElementById('kr-stock').value.trim();
+    const buy = parseFloat(document.getElementById('kr-buy').value);
+    const sell = parseFloat(document.getElementById('kr-sell').value);
+    const qty = parseFloat(document.getElementById('kr-qty').value);
+    const memo = document.getElementById('kr-memo').value.trim();
+    if (!date || !stock || isNaN(buy) || isNaN(sell) || isNaN(qty)) return;
+    krEntries.push({ date, stock, buy, sell, qty, memo });
+    krEntries.sort((a,b) => a.date.localeCompare(b.date));
+    ['kr-stock','kr-buy','kr-sell','kr-qty','kr-memo'].forEach(id => document.getElementById(id).value = '');
+    save();
+    refreshKr();
+    refreshHome();
+  }
+
+  function addUs() {
+    const date = document.getElementById('us-date').value;
+    const stock = document.getElementById('us-stock').value.trim();
+    const buy = parseFloat(document.getElementById('us-buy').value);
+    const sell = parseFloat(document.getElementById('us-sell').value);
+    const qty = parseFloat(document.getElementById('us-qty').value);
+    const buyRate = parseFloat(document.getElementById('us-buy-rate').value);
+    const sellRate = parseFloat(document.getElementById('us-sell-rate').value);
+    const memo = document.getElementById('us-memo').value.trim();
+    if (!date || !stock || isNaN(buy) || isNaN(sell) || isNaN(qty)) return;
+    usEntries.push({ date, stock, buy, sell, qty, buyRate: buyRate||fxRate, sellRate: sellRate||fxRate, memo });
+    usEntries.sort((a,b) => a.date.localeCompare(b.date));
+    ['us-stock','us-buy','us-sell','us-qty','us-buy-rate','us-sell-rate','us-memo'].forEach(id => document.getElementById(id).value = '');
+    save();
+    refreshUs();
+    refreshHome();
+  }
+
+  function deleteKr(i) { krEntries.splice(i,1); save(); refreshKr(); refreshHome(); }
+  function deleteUs(i) { usEntries.splice(i,1); save(); refreshUs(); refreshHome(); }
+
+  function fmt(n, decimals=0) {
+    return n.toLocaleString('ko-KR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  function refreshKr() {
+    const tbody = document.getElementById('kr-body');
+    tbody.innerHTML = '';
+    document.getElementById('kr-empty').style.display = krEntries.length ? 'none' : 'block';
+    krEntries.forEach((e, i) => {
+      const profit = (e.sell - e.buy) * e.qty;
+      const rate = ((e.sell - e.buy) / e.buy * 100);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td><span class="tag">${e.stock}</span></td>
+        <td>${fmt(e.buy)}원</td>
+        <td>${fmt(e.sell)}원</td>
+        <td>${fmt(e.qty)}</td>
+        <td class="${profit>=0?'pos':'neg'}">${profit>=0?'+':''}${fmt(profit)}원</td>
+        <td class="${rate>=0?'pos':'neg'}">${rate>=0?'+':''}${fmt(rate,2)}%</td>
+        <td style="font-size:11px;color:#888;">${e.memo||'-'}</td>
+        <td><button class="delete-btn" onclick="deleteKr(${i})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function refreshUs() {
+    const tbody = document.getElementById('us-body');
+    tbody.innerHTML = '';
+    document.getElementById('us-empty').style.display = usEntries.length ? 'none' : 'block';
+    usEntries.forEach((e, i) => {
+      const profitUsd = (e.sell - e.buy) * e.qty;
+      const rate = ((e.sell - e.buy) / e.buy * 100);
+      const buyKrw = e.buy * e.qty * e.buyRate;
+      const sellKrw = e.sell * e.qty * e.sellRate;
+      const fxGain = (e.sell * e.qty * (e.sellRate - e.buyRate));
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td><span class="tag tag-blue">${e.stock}</span></td>
+        <td>$${fmt(e.buy,2)}</td>
+        <td>$${fmt(e.sell,2)}</td>
+        <td>${fmt(e.qty)}</td>
+        <td class="${profitUsd>=0?'pos':'neg'}">${profitUsd>=0?'+':''}$${fmt(profitUsd,2)}</td>
+        <td class="${rate>=0?'pos':'neg'}">${rate>=0?'+':''}${fmt(rate,2)}%</td>
+        <td class="${fxGain>=0?'pos':'neg'}">${fxGain>=0?'+':''}${fmt(fxGain)}원</td>
+        <td style="font-size:11px;color:#888;">${e.memo||'-'}</td>
+        <td><button class="delete-btn" onclick="deleteUs(${i})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function refreshHome() {
+    const krTotal = krEntries.reduce((s,e) => s + (e.sell-e.buy)*e.qty, 0);
+    const usTotal = usEntries.reduce((s,e) => s + (e.sell-e.buy)*e.qty, 0);
+    const usTotalKrw = usEntries.reduce((s,e) => s + (e.sell-e.buy)*e.qty*e.sellRate, 0);
+    const totalKrw = krTotal + usTotalKrw;
+    const achieveRate = goalAmt > 0 ? Math.round(totalKrw / goalAmt * 100) : 0;
+
+    document.getElementById('s-kr').textContent = (krTotal>=0?'+':'') + fmt(krTotal) + '원';
+    document.getElementById('s-kr').className = 'metric-value ' + (krTotal>=0?'pos':'neg');
+    document.getElementById('s-us').textContent = (usTotal>=0?'+':'') + '$' + fmt(usTotal,2);
+    document.getElementById('s-us').className = 'metric-value ' + (usTotal>=0?'pos':'neg');
+    document.getElementById('s-goal').textContent = fmt(goalAmt) + '원';
+    document.getElementById('s-total').textContent = (totalKrw>=0?'+':'') + fmt(totalKrw) + '원';
+    document.getElementById('s-total').className = 'metric-value ' + (totalKrw>=0?'pos':'neg');
+    document.getElementById('s-rate').textContent = achieveRate + '%';
+  }
+
+  refreshKr();
+  refreshUs();
+  refreshHome();
+</script>
+</body>
+</html>
