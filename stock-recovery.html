@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>주식 손실 복구 트래커</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 20px; font-weight: 500; margin-bottom: 1.5rem; }
+    .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; }
+    .metric { background: #f5f5f3; border-radius: 8px; padding: 1rem; text-align: center; }
+    .metric-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 20px; font-weight: 500; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1rem; }
+    @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } .grid3 { grid-template-columns: 1fr; } }
+    .section-title { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 8px; }
+    .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .input-row label { font-size: 12px; color: #888; min-width: 42px; }
+    input[type=text], input[type=number], input[type=date] {
+      flex: 1; height: 36px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px;
+      padding: 0 10px; font-size: 13px; background: #fff; color: #1a1a1a; outline: none;
+    }
+    input:focus { border-color: rgba(0,0,0,0.4); }
+    button {
+      height: 36px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px;
+      background: #fff; color: #1a1a1a; font-size: 13px; cursor: pointer; transition: background 0.15s;
+    }
+    button:hover { background: #f5f5f3; }
+    .divider { border: none; border-top: 0.5px solid rgba(0,0,0,0.1); margin: 12px 0; }
+    .donut-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; padding: 1rem 0; }
+    .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+    .pct-label { font-size: 26px; font-weight: 500; line-height: 1; }
+    .pct-sub { font-size: 11px; color: #888; margin-top: 4px; }
+    .log-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+    .log-table th { font-weight: 500; font-size: 12px; color: #888; text-align: left; padding: 4px 8px; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+    .log-table td { padding: 6px 8px; border-bottom: 0.5px solid rgba(0,0,0,0.07); }
+    .pos { color: #1D9E75; } .neg { color: #E24B4A; }
+    .stock-badge { display: inline-block; font-size: 11px; background: #e6f1fb; color: #185FA5; border-radius: 4px; padding: 1px 6px; }
+    .pct-badge { font-size: 12px; font-weight: 500; }
+    .delete-btn { background: none; border: none; cursor: pointer; color: #aaa; font-size: 14px; padding: 2px 6px; }
+    .delete-btn:hover { color: #E24B4A; background: none; }
+    .unit { font-size: 12px; color: #888; }
+    #empty-msg { font-size: 13px; color: #aaa; text-align: center; padding: 16px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📈 주식 손실 복구 트래커</h1>
+
+  <div class="grid3">
+    <div class="metric">
+      <div class="metric-label">목표 복구액</div>
+      <div class="metric-value" id="m-goal" style="color:#E24B4A;">-500,000원</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">현재 복구액</div>
+      <div class="metric-value" id="m-recovered">0원</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">남은 금액</div>
+      <div class="metric-value" id="m-remain">500,000원</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem;">
+    <div class="card">
+      <div class="section-title">목표 설정</div>
+      <div class="input-row">
+        <input type="number" id="goal-input" value="500000" step="10000" />
+        <span class="unit">원</span>
+      </div>
+      <button onclick="updateGoal()" style="width:100%;">목표 업데이트</button>
+
+      <hr class="divider" />
+
+      <div class="section-title">손익 입력</div>
+      <div class="input-row">
+        <label>날짜</label>
+        <input type="date" id="date-input" />
+      </div>
+      <div class="input-row">
+        <label>종목명</label>
+        <input type="text" id="stock-input" placeholder="예) 삼성전자" />
+      </div>
+      <div class="input-row">
+        <label>손익</label>
+        <input type="number" id="amount-input" placeholder="이익 양수, 손실 음수" step="1000" />
+        <span class="unit">원</span>
+      </div>
+      <button onclick="addEntry()" style="width:100%;">추가하기</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">복구율</div>
+      <div class="donut-wrap">
+        <div style="position:relative;width:160px;height:160px;">
+          <canvas id="donutChart" width="160" height="160"></canvas>
+          <div class="donut-center">
+            <div class="pct-label" id="pct-display">0%</div>
+            <div class="pct-sub" id="pct-sub">복구 시작 전</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">기록</div>
+    <table class="log-table">
+      <thead><tr><th>날짜</th><th>종목</th><th>손익</th><th>누적 복구액</th><th>복구율</th><th></th></tr></thead>
+      <tbody id="log-body"></tbody>
+    </table>
+    <div id="empty-msg">아직 기록이 없어요. 첫 손익을 입력해보세요!</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  let goal = 500000;
+  let entries = JSON.parse(localStorage.getItem('entries') || '[]');
+  goal = parseInt(localStorage.getItem('goal') || '500000');
+  document.getElementById('goal-input').value = goal;
+
+  let donutChart = null;
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  document.getElementById('date-input').value = todayStr();
+
+  function save() {
+    localStorage.setItem('entries', JSON.stringify(entries));
+    localStorage.setItem('goal', goal);
+  }
+
+  function buildChart() {
+    const ctx = document.getElementById('donutChart').getContext('2d');
+    donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { datasets: [{ data: [0, 100], backgroundColor: ['#378ADD', 'rgba(136,135,128,0.2)'], borderWidth: 0, hoverOffset: 0 }] },
+      options: { responsive: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 500 } }
+    });
+  }
+
+  function updateGoal() {
+    const v = parseInt(document.getElementById('goal-input').value);
+    if (!v || v <= 0) return;
+    goal = v;
+    save();
+    refresh();
+  }
+
+  function addEntry() {
+    const date = document.getElementById('date-input').value;
+    const stock = document.getElementById('stock-input').value.trim() || '-';
+    const amount = parseInt(document.getElementById('amount-input').value);
+    if (!date || isNaN(amount)) return;
+    entries.push({ date, stock, amount });
+    entries.sort((a,b) => a.date.localeCompare(b.date));
+    document.getElementById('stock-input').value = '';
+    document.getElementById('amount-input').value = '';
+    save();
+    refresh();
+  }
+
+  function deleteEntry(i) {
+    entries.splice(i, 1);
+    save();
+    refresh();
+  }
+
+  function refresh() {
+    const total = entries.reduce((s, e) => s + e.amount, 0);
+    const pct = Math.min(Math.max(Math.round(total / goal * 100), 0), 100);
+    const remain = Math.max(goal - total, 0);
+
+    document.getElementById('m-goal').textContent = '-' + goal.toLocaleString() + '원';
+    document.getElementById('m-recovered').textContent = total.toLocaleString() + '원';
+    document.getElementById('m-recovered').style.color = total >= 0 ? '#1D9E75' : '#E24B4A';
+    document.getElementById('m-remain').textContent = remain.toLocaleString() + '원';
+    document.getElementById('pct-display').textContent = pct + '%';
+
+    const sub = document.getElementById('pct-sub');
+    if (pct >= 100) { sub.textContent = '완전 복구! 🎉'; sub.style.color = '#1D9E75'; }
+    else if (pct > 0) { sub.textContent = '복구 중!'; sub.style.color = '#378ADD'; }
+    else { sub.textContent = '복구 시작 전'; sub.style.color = '#888'; }
+
+    const fillColor = pct >= 100 ? '#1D9E75' : '#378ADD';
+    donutChart.data.datasets[0].data = [pct, 100 - pct];
+    donutChart.data.datasets[0].backgroundColor = [fillColor, 'rgba(136,135,128,0.2)'];
+    donutChart.update('active');
+
+    const tbody = document.getElementById('log-body');
+    tbody.innerHTML = '';
+    document.getElementById('empty-msg').style.display = entries.length ? 'none' : 'block';
+
+    let cumulative = 0;
+    entries.forEach((e, i) => {
+      cumulative += e.amount;
+      const rowPct = Math.round(cumulative / goal * 1000) / 10;
+      const pctColor = rowPct >= 100 ? '#1D9E75' : rowPct > 0 ? '#378ADD' : '#E24B4A';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td><span class="stock-badge">${e.stock}</span></td>
+        <td class="${e.amount >= 0 ? 'pos' : 'neg'}">${e.amount >= 0 ? '+' : ''}${e.amount.toLocaleString()}원</td>
+        <td class="${cumulative >= 0 ? 'pos' : 'neg'}">${cumulative.toLocaleString()}원</td>
+        <td><span class="pct-badge" style="color:${pctColor}">${rowPct}%</span></td>
+        <td><button class="delete-btn" onclick="deleteEntry(${i})"><i class="ti ti-trash"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  buildChart();
+  refresh();
+</script>
+</body>
+</html>
