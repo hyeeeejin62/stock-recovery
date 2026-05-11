@@ -55,6 +55,7 @@
     tr:last-child td { border-bottom: none; }
     .del-btn { background: none; border: none; color: #FD7979; cursor: pointer; font-size: 13px; }
     .empty-msg { text-align: center; color: #bbb; font-size: 12px; padding: 0.8rem 0; }
+    .save-badge { font-size: 10px; color: #aaa; text-align: center; margin-top: 0.5rem; padding-bottom: 1rem; }
     @media (max-width: 500px) {
       .cards { grid-template-columns: 1fr; }
       .input-row { grid-template-columns: 1fr 1fr; }
@@ -117,10 +118,33 @@
       <div id="tableUS"><div class="empty-msg">아직 기록이 없어요!</div></div>
     </div>
   </div>
+
+  <div class="save-badge" id="saveBadge"></div>
 </div>
 
 <script>
   let goal = 0, records = [], selectedMarket = 'KR', donutChart = null;
+  const KEY_GOAL = 'maytrade_goal';
+  const KEY_RECORDS = 'maytrade_records';
+
+  function saveData() {
+    try {
+      localStorage.setItem(KEY_GOAL, JSON.stringify(goal));
+      localStorage.setItem(KEY_RECORDS, JSON.stringify(records));
+      const now = new Date();
+      document.getElementById('saveBadge').textContent =
+        '자동저장 완료 · ' + now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    } catch(e) {}
+  }
+
+  function loadData() {
+    try {
+      const g = localStorage.getItem(KEY_GOAL);
+      const r = localStorage.getItem(KEY_RECORDS);
+      if (g !== null) { goal = JSON.parse(g); document.getElementById('goalInput').value = goal; }
+      if (r !== null) { records = JSON.parse(r); }
+    } catch(e) {}
+  }
 
   function fmt(n) { return isNaN(n) ? '-' : Number(n).toLocaleString('ko-KR') + '원'; }
   function calcAchieve(pnl) { return (!goal || goal === 0) ? null : (pnl / goal) * 100; }
@@ -139,6 +163,7 @@
     goal = v;
     records = records.map(r => ({ ...r, achieve: calcAchieve(r.pnl) }));
     updateCards(); updateChart(); renderTables(); previewAchieve();
+    saveData();
   }
 
   function selectMarket(m) {
@@ -160,11 +185,13 @@
     document.getElementById('inReason').value = '';
     document.getElementById('achievePreview').textContent = '';
     updateCards(); updateChart(); renderTables();
+    saveData();
   }
 
   function deleteRecord(i) {
     records.splice(i, 1);
     updateCards(); updateChart(); renderTables();
+    saveData();
   }
 
   function updateCards() {
@@ -213,7 +240,11 @@
     });
   }
 
+  loadData();
   updateCards(); updateChart(); renderTables();
+  if (goal > 0 || records.length > 0) {
+    document.getElementById('saveBadge').textContent = '저장된 데이터를 불러왔어요 ✓';
+  }
 </script>
 </body>
 </html>
